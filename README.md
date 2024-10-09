@@ -65,7 +65,7 @@ This will generate a FASTA file output.fasta containing the assembled contigs an
     -Example of an output contig in FASTA format:
     ```
     >contig_0 len=1024
-ATCGTACG... (contig sequence)
+    ATCGTACG... (contig sequence)
     ```
 - Graph Image (Optional): A PNG image representing the De Bruijn graph, with large edges highlighted.
 
