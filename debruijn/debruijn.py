@@ -17,6 +17,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+import networkx as nx
 from networkx import (
     DiGraph,
     all_simple_paths,
@@ -39,13 +40,13 @@ from typing import Iterator, Dict, List
 
 matplotlib.use("Agg")
 
-__author__ = "Your Name"
+__author__ = "Sana GUEDOUAR"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["Sana GUEDOUAR"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "Sana GUEDOUAR"
+__email__ = "sana.guedouar@etu.u-paris.fr"
 __status__ = "Developpement"
 
 
@@ -102,7 +103,17 @@ def read_fastq(fastq_file: Path) -> Iterator[str]:
     :param fastq_file: (Path) Path to the fastq file.
     :return: A generator object that iterate the read sequences.
     """
-    pass
+    with fastq_file.open() as f:
+        lines = iter(f)
+        while True:
+            try:
+                next(lines)  # Skip the first line
+                yield next(lines).strip()
+                next(lines)  # Skip the third line
+                next(lines)  # Skip the fourth line
+            except StopIteration:
+                break
+            
 
 
 def cut_kmer(read: str, kmer_size: int) -> Iterator[str]:
@@ -111,7 +122,8 @@ def cut_kmer(read: str, kmer_size: int) -> Iterator[str]:
     :param read: (str) Sequence of a read.
     :return: A generator object that provides the kmers (str) of size kmer_size.
     """
-    pass
+    for i in range(len(read) - kmer_size + 1):
+        yield read[i : i + kmer_size]
 
 
 def build_kmer_dict(fastq_file: Path, kmer_size: int) -> Dict[str, int]:
@@ -120,16 +132,34 @@ def build_kmer_dict(fastq_file: Path, kmer_size: int) -> Dict[str, int]:
     :param fastq_file: (str) Path to the fastq file.
     :return: A dictionnary object that identify all kmer occurrences.
     """
-    pass
+    kmer_dict = {}
+    for read in read_fastq(fastq_file):
+        for kmer in cut_kmer(read, kmer_size):
+            if kmer in kmer_dict:
+                kmer_dict[kmer] += 1
+            else:
+                kmer_dict[kmer] = 1
+    return kmer_dict
 
 
 def build_graph(kmer_dict: Dict[str, int]) -> DiGraph:
-    """Build the debruijn graph
+    """Build the de Bruijn graph from k-mers.
 
-    :param kmer_dict: A dictionnary object that identify all kmer occurrences.
-    :return: A directed graph (nx) of all kmer substring and weight (occurrence).
+    :param kmer_dict: A dictionary object that identifies all k-mer occurrences.
+    :return: A directed graph (DiGraph) with k-mer substrings as nodes and occurrences as edge weights.
     """
-    pass
+    G = nx.DiGraph()
+
+    # Parcourir tous les k-mers et leur occurrence
+    for kmer, occurrence in kmer_dict.items():
+        # Calculer le préfixe et le suffixe
+        prefix = kmer[:-1]
+        suffix = kmer[1:]
+        
+        # Ajouter un lien dans le graphe entre le préfixe et le suffixe avec le poids de l'occurrence
+        G.add_edge(prefix, suffix, weight=occurrence)
+
+    return G
 
 
 def remove_paths(
@@ -296,7 +326,28 @@ def main() -> None:  # pragma: no cover
     """
     # Get arguments
     args = get_arguments()
+    
+    # Étape 1: Lecture du fichier FASTQ et extraction des k-mers
+    print("Lecture du fichier FASTQ...")
+    fastq_file = args.fastq_file
+    kmer_size = args.kmer_size
 
+    # Construire le dictionnaire de k-mers
+    print(f"Construction du dictionnaire de k-mers avec k={kmer_size}...")
+    kmer_dict = build_kmer_dict(fastq_file, kmer_size)
+
+    # Afficher quelques k-mers pour vérifier
+    print("Affichage des 10 premiers k-mers du dictionnaire :")
+    for kmer, occurrence in list(kmer_dict.items())[:10]:
+        print(f"{kmer}: {occurrence}")
+        # Construire le graphe à partir du dictionnaire de k-mers
+    graph = build_graph(kmer_dict)
+
+    # Afficher quelques arêtes pour vérifier
+    print("Affichage de quelques arêtes du graphe :")
+    for u, v, d in list(graph.edges(data=True))[:10]:
+        print(f"{u} -> {v} (weight: {d['weight']})")
+        
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit
     # graphe
