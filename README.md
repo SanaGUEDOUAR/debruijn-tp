@@ -22,8 +22,8 @@ This program is distributed under the terms of the GNU General Public License v3
 Clone this repository and make sure you have Python 3 installed along with the required libraries.
 
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone git@github.com:SanaGUEDOUAR/debruijn-tp.git>
+cd debruijn-tp
 ```
 ### Install the required libraries
 
